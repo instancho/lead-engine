@@ -1,0 +1,56 @@
+name: Run Lead Engine
+
+on:
+  # Run manually from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Google Maps search query"
+        required: true
+        default: "roofing company in Dallas"
+      max_results:
+        description: "Maximum number of leads"
+        required: true
+        default: "100"
+
+  # Run on a schedule (every Monday at 9am UTC)
+  schedule:
+    - cron: "0 9 * * 1"
+
+jobs:
+  generate-leads:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Chrome (for Selenium)
+        uses: browser-actions/setup-chrome@v1
+        with:
+          chrome-version: stable
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run lead generation pipeline
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
+          WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}
+        run: |
+          python main.py \
+            --query "${{ github.event.inputs.query || 'roofing company in Dallas' }}" \
+            --max_results ${{ github.event.inputs.max_results || '100' }}
+
+      - name: Upload CSV as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: leads-output
+          path: leads_output.csv

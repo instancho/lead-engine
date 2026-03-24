@@ -1,0 +1,18 @@
+# Secrets — NEVER commit these
+.env
+credentials.json
+authorized_user.json
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+
+# Output
+leads_output.csv
+
+# OS
+.DS_Store
+Thumbs.db
