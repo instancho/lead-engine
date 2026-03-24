@@ -40,7 +40,6 @@ jobs:
 
       - name: Run lead generation pipeline
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
           GOOGLE_CREDENTIALS_JSON: ${{ secrets.GOOGLE_CREDENTIALS_JSON }}
           WEBHOOK_URL: ${{ secrets.WEBHOOK_URL }}

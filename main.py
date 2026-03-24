@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-main.py — Lead Generation & Outreach Preparation System
+main.py — Lead Generation System
 
 Orchestrates the full pipeline:
   1. Scrape leads from Google Maps
   2. Enrich each lead with email extraction
   3. Analyse each website for issues
-  4. Generate AI-powered personalization lines
-  5. Export clean CSV
+  4. Export to CSV / Google Sheets
 """
 
 import argparse
@@ -20,7 +19,6 @@ import config
 from scraper import scrape_leads
 from enricher import extract_email
 from analyzer import analyze_website
-from personalizer import generate_personalization
 from webhook_exporter import export_to_webhook
 from sheets_exporter import export_to_sheets
 
@@ -56,11 +54,6 @@ def parse_args():
         help=f"Output CSV filename (default: {config.OUTPUT_FILENAME})",
     )
     parser.add_argument(
-        "--skip-personalization",
-        action="store_true",
-        help="Skip AI personalization step (useful if no API key).",
-    )
-    parser.add_argument(
         "--skip-webhook",
         action="store_true",
         help="Skip exporting to Webhook even if configured.",
@@ -73,7 +66,7 @@ def parse_args():
     return parser.parse_args()
 
 
-def run_pipeline(query: str, max_results: int, output_file: str, skip_ai: bool = False, skip_webhook: bool = False, skip_sheets: bool = False):
+def run_pipeline(query: str, max_results: int, output_file: str, skip_webhook: bool = False, skip_sheets: bool = False):
     """Run the full lead-generation pipeline."""
 
     logger.info("=" * 60)
@@ -84,7 +77,7 @@ def run_pipeline(query: str, max_results: int, output_file: str, skip_ai: bool =
     logger.info("=" * 60)
 
     # ── Step 1: Scrape Google Maps ────────────────────────────────────────
-    logger.info("\n📍  STEP 1 / 4 — Scraping Google Maps …")
+    logger.info("\n📍  STEP 1 / 3 — Scraping Google Maps …")
     raw_leads = scrape_leads(query, max_results)
 
     if not raw_leads:
@@ -94,33 +87,18 @@ def run_pipeline(query: str, max_results: int, output_file: str, skip_ai: bool =
     logger.info(f"   → {len(raw_leads)} leads scraped.\n")
 
     # ── Step 2: Enrich with email ─────────────────────────────────────────
-    logger.info("📧  STEP 2 / 4 — Extracting emails …")
+    logger.info("📧  STEP 2 / 3 — Extracting emails …")
     for idx, lead in enumerate(raw_leads, 1):
         logger.info(f"  [{idx}/{len(raw_leads)}] {lead['business_name']}")
         lead["email"] = extract_email(lead.get("website", ""))
         time.sleep(1)  # polite delay
 
     # ── Step 3: Analyse websites ──────────────────────────────────────────
-    logger.info("\n🔍  STEP 3 / 4 — Analysing websites …")
+    logger.info("\n🔍  STEP 3 / 3 — Analysing websites …")
     for idx, lead in enumerate(raw_leads, 1):
         logger.info(f"  [{idx}/{len(raw_leads)}] {lead['business_name']}")
         lead["detected_issues"] = analyze_website(lead.get("website", ""))
         time.sleep(1)
-
-    # ── Step 4: AI personalisation ────────────────────────────────────────
-    if skip_ai:
-        logger.info("\n🤖  STEP 4 / 4 — Personalization SKIPPED (--skip-personalization)")
-        for lead in raw_leads:
-            lead["personalization_line"] = ""
-    else:
-        logger.info("\n🤖  STEP 4 / 4 — Generating personalisation lines …")
-        for idx, lead in enumerate(raw_leads, 1):
-            logger.info(f"  [{idx}/{len(raw_leads)}] {lead['business_name']}")
-            lead["personalization_line"] = generate_personalization(
-                lead["business_name"],
-                lead.get("detected_issues", ""),
-            )
-            time.sleep(0.5)  # respect rate limits
 
     # ── Build DataFrame & export ──────────────────────────────────────────
     df = pd.DataFrame(raw_leads, columns=config.CSV_COLUMNS)
@@ -169,12 +147,10 @@ def run_pipeline(query: str, max_results: int, output_file: str, skip_ai: bool =
     # Quick summary
     with_email = (df["email"] != "").sum()
     with_issues = (df["detected_issues"] != "").sum()
-    with_personalisation = (df["personalization_line"] != "").sum()
 
     logger.info(f"\n  📊  Summary:")
     logger.info(f"      Leads with email:           {with_email}/{len(df)}")
     logger.info(f"      Leads with detected issues:  {with_issues}/{len(df)}")
-    logger.info(f"      Leads with personalisation:  {with_personalisation}/{len(df)}")
 
     return df
 
@@ -185,7 +161,6 @@ if __name__ == "__main__":
         query=args.query,
         max_results=args.max_results,
         output_file=args.output,
-        skip_ai=args.skip_personalization,
         skip_webhook=args.skip_webhook,
         skip_sheets=args.skip_sheets,
     )

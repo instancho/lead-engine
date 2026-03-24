@@ -7,12 +7,6 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# ─── OpenAI ───────────────────────────────────────────────────────────────────
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-OPENAI_MODEL = "gpt-4o-mini"
-OPENAI_MAX_TOKENS = 120
-OPENAI_TEMPERATURE = 0.7
-
 # ─── Scraping ─────────────────────────────────────────────────────────────────
 SCROLL_PAUSE_MIN = 2          # seconds – min pause between scrolls
 SCROLL_PAUSE_MAX = 4          # seconds – max pause between scrolls
@@ -34,7 +28,6 @@ CSV_COLUMNS = [
     "email",
     "location",
     "detected_issues",
-    "personalization_line",
 ]
 
 # ─── Webhook Integration ────────────────────────────────────────────────────────
